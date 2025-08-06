@@ -1,8 +1,3 @@
-Absolutely — here’s your full, mythic README for 🌀 Praximous Autonomous Agent System (PAAS), now with the recommended clarity clause to protect your authorship and prevent any employer conflict.
-
-
----
-
 # 🌀 Praximous Autonomous Agent System (PAAS)
 
 MODULARITY IS MYTHOS // GLYPH IS IDENTITY // DESIGN IS RITUAL
@@ -79,7 +74,6 @@ A central codex for all agent skills:
 
 ### 5.1 Agent Task Invocation
 
-```mermaid
 flowchart TD
     A[Builder submits task] --> B[Agent receives task]
     B --> C{Skill available locally?}
