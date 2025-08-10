@@ -1,160 +1,98 @@
-# 🌀 Praximous Autonomous Agent System (PAAS)
+Project: Autonomous Agent System (AAS)
 
-MODULARITY IS MYTHOS // GLYPH IS IDENTITY // DESIGN IS RITUAL
+A modular, on-premise framework for autonomous agents.
 
-⚠️ **Creator's Note**  
-Praximous is an independent system, designed and developed entirely as a personal project. It is not affiliated with or derived from my professional employment. All ideas, code, and documentation presented here are original works under my personal authorship.
+A Quick Note on Ownership
 
-This codex presents **Praximous**, a secure, modular, and on-premise multi-agent framework designed to offload routine cognitive labor from your Copilot and human staff. It enables containerized agents to autonomously handle tasks, learn from feedback, and escalate only when needed.
+This is important, so I'm putting it right at the top. This is my personal project, built on my own time with my own tools. It has nothing to do with my day job or any other company. I designed it, I wrote the code, and I own it. Simple as that.
 
-Version 2.1.0 introduces practical fixes for deployment at scale: a centralized skill pantheon, manual Copilot fallback, strict local resource control, and rule-based learning refinement.
+The Problem
 
----
+Humans, and the expensive AI Copilots that assist them, waste too much time on repetitive digital tasks—formatting documents, running scripts, checking data, etc. Most of this grunt work doesn't require a high-level AI; it just needs a simple, reliable bot to get it done.
 
-## 2. Ritual Architecture
+The Solution
 
-### 2.1 High-Level Glyph
-- A distributed, containerized multi-agent system.
-- Agents retrieve task "glyphs" from a central Skill Pantheon.
-- All data processing remains local and secure.
-- Copilot fallback requires a human-in-the-loop approval ritual.
+A simple, secure, and on-premise framework for running an army of small, specialized agents. Each agent is a containerized bot designed to do a specific job. They pull tasks from a queue, grab the skills they need from a central library, and only escalate to a human when they get stuck. It’s about offloading the grunt work so your skilled people can focus on real problems.
 
-### 2.2 Altar Environment
-- **Deployment Mode**: On-premise Linux servers (Ubuntu / RHEL).
-- **Network Model**: VLAN isolation only.
-- **Containerization**: Podman (rootless) or optional Kubernetes.
-- **Resource Control**: systemd + Podman (MemoryMax, CPUQuota).
+The Architecture
 
----
+At its core, this is a distributed system designed for local, secure processing.
 
-## 3. Modular Tenets
+    Deployment: It runs on your own Linux servers (Ubuntu/RHEL) and uses Podman for rootless containers. This keeps it secure and simple.
 
-### 3.1 Agent Core
-Each agent is composed of:
-- `Praxis-Agent-Core`: FastAPI microservice.
-- `SyntaxLearner`: Enforces formatting via spaCy.
-- `TaskExecutor`: Executes named skills (cliexec, markdowngen, etc.).
-- `MemoryEngine`: TinyDB-based memory store.
-- `SelfImprover`: Logs Copilot feedback, refines behavior (Phase 1: rule-based).
+    Resource Control: I'm using systemd and Podman to strictly limit how much CPU and memory each agent can use. No single agent can crash the whole system.
 
-### 3.2 Skill Pantheon
-A central codex for all agent skills:
-- **Storage**: Git-style object store or shared filesystem.
-- **Metadata DB**: PostgreSQL / Redis.
-- **Skills include**: `skill_id`, `category`, `permissions`, `filepath`, `version`.
+    Local-First: All data processing happens on your network. Nothing is sent to the cloud unless a human explicitly approves it.
 
-**Agent Flow**:
-- Checks local skill cache.
-- Queries Skill Pantheon if missing.
-- Verifies and executes in sandbox.
+The Key Parts
 
-### 3.3 Copilot Oversight
-- A minimal fallback layer behind the Mentor Bridge.
-- Requires manual approval from authorized staff.
-- Annotated results are returned to the SelfImprover for agent learning.
+The system is made of a few main components:
 
-### 3.4 Monitoring Augury
-- **Resource monitoring**: Netdata or Prometheus + Grafana.
-- **Lore-keeping**: Execution stats, failure rates, agent maturity levels.
+    The Agent: Each agent is a lightweight FastAPI microservice running in a container. It has a TaskExecutor to run jobs, a MemoryEngine (using TinyDB) to remember what it's learned, and a SelfImprover to get better based on human feedback.
 
----
+    The Skill Library (Pantheon): This is a central git repository or shared filesystem where all the agent "skills" (Python scripts) are stored, versioned, and categorized. An agent fetches a skill from here if it doesn't have it cached locally.
 
-## 4. Vigils & Trials
+    The Human Fallback (Copilot Bridge): If an agent fails at a task, it doesn't just crash. It flags the task for human review. An authorized staff member can then process the task, and the annotated result is fed back to the agent's SelfImprover module so it can learn from the failure.
 
-| Mechanism       | Purpose                                      |
-|------------------|----------------------------------------------|
-| RBAC            | Agent-level and pantheon-level scoping        |
-| Audit Trail     | Immutable logs for each agent invocation      |
-| Data Sandbox    | Read-only execution folders per agent         |
-| Manual Escalation | 2FA + role verification for fallback        |
+    Monitoring: Using standard tools like Prometheus and Grafana to watch resource usage, failure rates, and task stats. No black boxes.
 
----
+Security (The Guard Rails)
 
-## 5. Operational Rituals
+Security is baked in, not bolted on.
+Mechanism	Purpose
+RBAC	Role-based access for agents and the skill library.
+Audit Trail	Immutable logs for every action an agent takes.
+Data Sandbox	Agents run in read-only folders.
+Manual Escalation	Requires 2FA for a human to handle a fallback task.
 
-### 5.1 Agent Task Invocation
+The Workflows
+
+1. How an Agent Gets a Task
+
+Code snippet
 
 flowchart TD
-    A[Builder submits task] --> B[Agent receives task]
-    B --> C{Skill available locally?}
+    A[User submits task] --> B[Agent receives task]
+    B --> C{Skill cached locally?}
     C -->|Yes| D[Run skill in sandbox]
-    D --> E[Log success to Monitor]
-    E --> F[SelfImprover updates MemoryEngine]
-    C -->|No| G[Query Skill Pantheon]
-    G --> H[Download + verify skill codex]
+    D --> E[Log result]
+    C -->|No| G[Query Skill Library]
+    G --> H[Download & verify skill]
     H --> D
-    H -->|Skill invalid| I[Escalate to Copilot Request]
-    I --> J[Manual Approval Required]
-    J --> K[Copilot processes task]
-    K --> L[Result returned and annotated]
-    L --> M[SelfImprover updates logic]
+    H -->|Fail| I[Flag for Human Fallback]
+    I --> J[Manual Approval]
+    J --> K[Human processes task]
+    K --> L[Annotated result returned]
+    L --> E
 
-5.2 Skill Registration Ritual
+2. How to Add a New Skill
 
-A builder uploads a .py skill to the Pantheon.
+    A developer commits a new Python skill script to the Skill Library repo.
 
-Automated linting + sandbox test run is performed.
+    An automated CI/CD pipeline runs a linter and a sandbox test.
 
-If passed → metadata is indexed and versioned.
+    If it passes, the skill is versioned and indexed in the database.
 
-Agents may request based on permissions.
+    Agents with the right permissions can now pull and use this new skill.
 
+The Roadmap
 
-
----
-
-6. Path of Evolution
-
-Each phase is detailed in modular .md scrolls:
-
+The project is broken down into logical phases. Perfect is the imaginary friend of never shipped.
 Phase	Scope	Outcome
+Phase 1	Core Agent System + Skill Library	A working proof-of-concept.
+Phase 2	Alpha Deployment with Human Fallback	Real-world use and feedback loop.
+Phase 3	Skill Search & Agent Tiering	Making the system smarter and more organized.
+Phase 4	Federated Deployment	Allowing multiple teams to share agents.
+Phase 5	Contributor Tools & Onboarding	Making it easy for others to build skills.
 
-Phase 1	Core Agent System + Skill Pantheon	POC for execution and logging
-Phase 2	Alpha Deployment in real rituals	Copilot fallback + feedback loop
-Phase 3	Enhancement Layer	Skill search + agent tiering
-Phase 4	Federation Deployment	Multi-team agent mesh
-Phase 5	Ecosystem Ritualization	Contributor onboarding + licensing
+Licensing & Ownership
 
+Let me be crystal clear. This is my project. The code, the architecture, and the documentation are my intellectual property unless explicitly stated otherwise.
 
+My proposed model is simple:
 
----
+    The core framework and documentation are free for public use (likely under an MIT license).
 
-7. Future Aspirations
+    Detailed roadmaps, deployment guides, and consulting would be paid services.
 
-Embedding-based skill discovery
-
-Skill-sharing across isolated environments
-
-Agent tiering (Executor, Critic, Researcher)
-
-Role-specific UI and deployment profiles
-
-A premium roadmap for external licensing
-
-
-
----
-
-8. Licensing & Authorship
-
-This framework is designed for cross-sector use. All code, architecture, and supporting docs are authored and owned by the creator unless explicitly licensed or transferred.
-
-Licensing Notice:
-All intellectual property in this repository is the sole creation of James The Giblet and is not affiliated with any employer or third-party institution.
-
-A Suggested Deployment Glyph:
-
-README.md: Free for public use
-
-Roadmaps, deployment guides: Paid tiers or consulting
-
-Full ownership remains with James The Giblet, unless sold or open-sourced
-
-
-
----
-
-🌐 Explore the Vault. Build your own Pantheon.
-💬 Collaborations, rituals, and questions are welcome.
-
----
+This is a framework for building your own army of digital helpers. Stop doing the grunt work manually. Build first, ask permission never.
